@@ -139,15 +139,37 @@ pluto_system_devices_init(struct pluto_program *sp)
 	sp->xsysd_base.destroy = pluto_system_devices_destroy;
 
 
+	xrt_tracking_origin &origin = sp->tracking_origin;
+	origin.type = XRT_TRACKING_TYPE_OTHER;
+	origin.offset = (xrt_pose)XRT_POSE_IDENTITY;
+	snprintf(origin.name, ARRAY_SIZE(origin.name), "Quest Tracking Space (Pluto)");
+
 	struct pluto_hmd *ph = pluto_hmd_create(*sp);
+	struct pluto_controller *pcl = pluto_controller_create( //
+	    *sp,                                                //
+	    XRT_DEVICE_TOUCH_CONTROLLER,                        //
+	    XRT_DEVICE_TYPE_LEFT_HAND_CONTROLLER);              //
+	struct pluto_controller *pcr = pluto_controller_create( //
+	    *sp,                                                //
+	    XRT_DEVICE_TOUCH_CONTROLLER,                        //
+	    XRT_DEVICE_TYPE_RIGHT_HAND_CONTROLLER);             //
+
 	sp->head = ph;
+	sp->left = pcl;
+	sp->right = pcr;
 
 	struct xrt_device *head = &ph->base;
+	struct xrt_device *left = &pcl->base;
+	struct xrt_device *right = &pcr->base;
 
 	// Setup the device base as the only device.
 	sp->xsysd_base.xdevs[0] = head;
-	sp->xsysd_base.xdev_count = 1;
+	sp->xsysd_base.xdevs[1] = left;
+	sp->xsysd_base.xdevs[2] = right;
+	sp->xsysd_base.xdev_count = 3;
 	sp->xsysd_base.roles.head = head;
+	sp->xsysd_base.roles.left = left;
+	sp->xsysd_base.roles.right = right;
 
 	u_builder_create_space_overseer(&sp->xsysd_base, &sp->xso);
 }

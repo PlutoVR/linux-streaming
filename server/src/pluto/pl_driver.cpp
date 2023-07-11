@@ -123,25 +123,27 @@ pluto_hmd_get_view_poses(struct xrt_device *xdev,
 struct pluto_hmd *
 pluto_hmd_create(pluto_program &pp)
 {
-	// This indicates you won't be using Monado's built-in tracking algorithms.
-	enum u_device_alloc_flags flags =
-	    (enum u_device_alloc_flags)(U_DEVICE_ALLOC_HMD | U_DEVICE_ALLOC_TRACKING_NONE);
+	// We only want the HMD parts and one input.
+	enum u_device_alloc_flags flags = (enum u_device_alloc_flags)(U_DEVICE_ALLOC_HMD);
 
 	struct pluto_hmd *ph = U_DEVICE_ALLOCATE(struct pluto_hmd, flags, 1, 0);
 
-	ph->program = &pp;
-
-	// This list should be ordered, most preferred first.
-	size_t idx = 0;
-	ph->base.hmd->blend_modes[idx++] = XRT_BLEND_MODE_OPAQUE;
-	ph->base.hmd->blend_mode_count = idx;
-
+	// Functions.
 	ph->base.update_inputs = pluto_hmd_update_inputs;
 	ph->base.get_tracked_pose = pluto_hmd_get_tracked_pose;
 	ph->base.get_view_poses = pluto_hmd_get_view_poses;
 	ph->base.destroy = pluto_hmd_destroy;
 
-	ph->pose = (struct xrt_pose)XRT_POSE_IDENTITY;
+	// Public data.
+	ph->base.name = XRT_DEVICE_GENERIC_HMD;
+	ph->base.device_type = XRT_DEVICE_TYPE_HMD;
+	ph->base.tracking_origin = &pp.tracking_origin;
+	ph->base.orientation_tracking_supported = true;
+	ph->base.position_tracking_supported = false;
+
+	// Private data.
+	ph->program = &pp;
+	ph->pose = (struct xrt_pose){XRT_QUAT_IDENTITY, {0.0f, 1.6f, 0.0f}};
 	ph->log_level = debug_get_log_option_sample_log();
 
 	// Print name.
@@ -149,11 +151,12 @@ pluto_hmd_create(pluto_program &pp)
 	snprintf(ph->base.serial, XRT_DEVICE_NAME_LEN, "Pluto HMD S/N");
 
 	// Setup input.
-	ph->base.name = XRT_DEVICE_GENERIC_HMD;
-	ph->base.device_type = XRT_DEVICE_TYPE_HMD;
 	ph->base.inputs[0].name = XRT_INPUT_GENERIC_HEAD_POSE;
-	ph->base.orientation_tracking_supported = true;
-	ph->base.position_tracking_supported = false;
+
+	// This list should be ordered, most preferred first.
+	size_t idx = 0;
+	ph->base.hmd->blend_modes[idx++] = XRT_BLEND_MODE_OPAQUE;
+	ph->base.hmd->blend_mode_count = idx;
 
 	// TODO: Find out the framerate that the remote device runs at
 	ph->base.hmd->screens[0].nominal_frame_interval_ns = time_s_to_ns(1.0f / 90.0f);

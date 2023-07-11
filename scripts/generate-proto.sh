@@ -1,4 +1,7 @@
-# Cursed!
+#!/bin/sh
+# Copyright 2023, Pluto VR, Inc.
+# SPDX-License-Identifier: BSL-1.0
+# Author: Moshi Turner <moses.turner@collabora.com>
 
 cd $(dirname $0)/../proto
 

@@ -19,7 +19,7 @@ target_link_libraries(
 target_include_directories(comp_pluto PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
 target_include_directories(comp_pluto INTERFACE ${CMAKE_CURRENT_SOURCE_DIR})
 
-add_library(drv_pluto STATIC pl_driver.cpp)
+add_library(drv_pluto STATIC pl_driver.cpp pl_device_controller.cpp)
 
 target_link_libraries(drv_pluto PRIVATE xrt-interfaces aux_util pluto_proto)
 

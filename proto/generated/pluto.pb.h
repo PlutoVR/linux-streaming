@@ -18,7 +18,6 @@ typedef enum _pluto_TrackedStatus {
 
 /* Struct definitions */
 typedef struct _pluto_Quaternion {
-    /* note: if bandwidth is a concern, you can drop the `w` and recover it on the ther end because */
     float w;
     float x;
     float y;

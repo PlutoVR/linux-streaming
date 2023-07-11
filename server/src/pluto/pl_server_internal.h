@@ -28,12 +28,12 @@
 #include <thread>
 
 
-
 struct pluto_program;
 struct pluto_hmd;
 
 struct pluto_hmd
 {
+	//! Has to come first.
 	struct xrt_device base;
 
 	struct xrt_pose pose;
@@ -41,7 +41,18 @@ struct pluto_hmd
 	// Should outlive us
 	struct pluto_program *program;
 
+	enum u_logging_level log_level;
+};
 
+struct pluto_controller
+{
+	//! Has to come first.
+	struct xrt_device base;
+
+	struct xrt_pose pose;
+
+	// Should outlive us
+	struct pluto_program *program;
 
 	enum u_logging_level log_level;
 };
@@ -54,8 +65,13 @@ struct pluto_program
 	//! System devices base.
 	struct xrt_system_devices xsysd_base;
 
+	//! Shared tracking origin for all devices.
+	struct xrt_tracking_origin tracking_origin;
+
 	// convenience
 	struct pluto_hmd *head;
+	struct pluto_controller *left;
+	struct pluto_controller *right;
 
 
 
@@ -93,6 +109,10 @@ pluto_compositor_create_system(pluto_program &pp, struct xrt_system_compositor *
 
 struct pluto_hmd *
 pluto_hmd_create(pluto_program &pp);
+
+struct pluto_controller *
+pluto_controller_create(pluto_program &pp, enum xrt_device_name device_name, enum xrt_device_type device_type);
+
 
 
 // communications interface functions
