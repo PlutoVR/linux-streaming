@@ -14,7 +14,7 @@ target_include_directories(ems_callbacks PUBLIC . ${GLIB_INCLUDE_DIRS})
 
 add_subdirectory(gst)
 
-add_library(comp_ems STATIC ems_compositor.cpp ems_compositor.h)
+add_library(comp_ems STATIC ems_compositor.cpp pl_pacer.cpp)
 target_link_libraries(
 	comp_ems
 	PUBLIC xrt-interfaces

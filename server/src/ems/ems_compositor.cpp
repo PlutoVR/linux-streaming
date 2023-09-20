@@ -33,6 +33,8 @@
 #include "vk/vk_cmd.h"
 #include "vk/vk_cmd_pool.h"
 
+#include "pl_pacer.h"
+
 #include <stdio.h>
 #include <stdarg.h>
 
@@ -54,6 +56,7 @@
 
 
 DEBUG_GET_ONCE_LOG_OPTION(log, "XRT_COMPOSITOR_LOG", U_LOGGING_INFO)
+DEBUG_GET_ONCE_BOOL_OPTION(enable_pluto_pacer, "ENABLE_PLUTO_PACER", 0)
 
 
 /*
@@ -260,10 +263,20 @@ compositor_init_vulkan(struct ems_compositor *c)
 static bool
 compositor_init_pacing(struct ems_compositor *c)
 {
-	xrt_result_t xret = u_pc_fake_create(c->settings.frame_interval_ns, os_monotonic_get_ns(), &c->upc);
-	if (xret != XRT_SUCCESS) {
-		EMS_COMP_ERROR(c, "Failed to create fake pacing helper!");
-		return false;
+	if (debug_get_bool_option_enable_pluto_pacer()) {
+		// We have our own Pluto Pacer !
+		xrt_result_t xret = u_pc_pluto_create(c->settings.frame_interval_ns, os_monotonic_get_ns(), &c->upc);
+		if (xret != XRT_SUCCESS) {
+			EMS_COMP_ERROR(c, "Failed to create Pluto Pacer");
+			return false;
+		}
+	} else {
+		// Let's use monado's fake pacer helper
+		xrt_result_t xret = u_pc_fake_create(c->settings.frame_interval_ns, os_monotonic_get_ns(), &c->upc);
+		if (xret != XRT_SUCCESS) {
+			EMS_COMP_ERROR(c, "Failed to create fake pacing helper!");
+			return false;
+		}
 	}
 
 	return true;
