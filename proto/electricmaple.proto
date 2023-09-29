@@ -35,6 +35,9 @@ enum TrackedStatus {
 
 message TrackingMessage {
 	Pose P_localSpace_viewSpace = 1;
+	Vec3 V_localSpace_viewSpace_linear = 10; // linear velocity
+	Vec3 V_localSpace_viewSpace_angular = 11; // angular velocity
+
 	Pose P_viewSpace_view0 = 2; // Left view
 	Pose P_viewSpace_view1 = 3; // Right view
 
