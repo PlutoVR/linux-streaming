@@ -129,6 +129,8 @@ typedef enum
 } EmStreamClientProperty;
 #endif
 
+#define RTP_TWOBYTES_HDR_EXT_ID 1 // Must be in the [1,15] range
+
 // clang-format off
 #define SINK_CAPS \
     "video/x-raw(" GST_CAPS_FEATURE_MEMORY_GL_MEMORY "), "              \
@@ -615,6 +617,29 @@ em_stream_client_try_pull_sample(EmStreamClient *sc, struct timespec *out_decode
 	// ALOGE("FRED: GOT A SAMPLE !!!");
 	GstBuffer *buffer = gst_sample_get_buffer(sample);
 	GstCaps *caps = gst_sample_get_caps(sample);
+	GstRTPBuffer rtp_buffer = GST_RTP_BUFFER_INIT;
+
+	// extract Downstream metadata from rtp header
+	pluto_DownMessage msg = pluto_DownMessage_init_default;
+
+	if (!gst_rtp_buffer_map(buffer, GST_MAP_WRITE, &rtp_buffer)) {
+		ALOGE("Failed to map GstBuffer");
+	}
+
+	// Not all buffers has extension data attached, check.
+	if (gst_rtp_buffer_get_extension(&rtp_buffer)) {
+		if (!gst_rtp_buffer_get_extension_twobytes_header(
+		        &rtp_buffer, NULL, RTP_TWOBYTES_HDR_EXT_ID,
+		        0 /* NOTE: We do not support multi-extension-elements.*/, &msg, sizeof(msg))) {
+			ALOGE("Could not retrieve twobyte rtp extension on buffer!");
+		}
+	}
+
+	gst_rtp_buffer_unmap(&rtp_buffer);
+
+	// TODO: use msg.frame_id (and others) and populate properly inside stream client.
+	// ...
+	// ...
 
 	GstVideoInfo info;
 	gst_video_info_from_caps(&info, caps);
