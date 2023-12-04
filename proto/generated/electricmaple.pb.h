@@ -127,8 +127,10 @@ typedef struct _em_proto_UpMessage {
 
 typedef struct _em_proto_DownFrameDataMessage {
     int64_t frame_sequence_id;
-    bool has_P_localSpace_viewSpace;
-    em_proto_Pose P_localSpace_viewSpace;
+    bool has_P_localSpace_view0;
+    em_proto_Pose P_localSpace_view0; /* Left view */
+    bool has_P_localSpace_view1;
+    em_proto_Pose P_localSpace_view1; /* Right view */
     int64_t display_time; /* TODO fovs here */
 } em_proto_DownFrameDataMessage;
 
@@ -177,7 +179,7 @@ extern "C" {
 #define em_proto_TouchControllerRight_init_default {false, em_proto_InputClickTouch_init_default, false, em_proto_InputClickTouch_init_default, false, em_proto_InputClickTouch_init_default, false, em_proto_TouchControllerCommon_init_default}
 #define em_proto_UpFrameMessage_init_default     {0, 0, 0, 0}
 #define em_proto_UpMessage_init_default          {0, false, em_proto_TrackingMessage_init_default, false, em_proto_UpFrameMessage_init_default}
-#define em_proto_DownFrameDataMessage_init_default {0, false, em_proto_Pose_init_default, 0}
+#define em_proto_DownFrameDataMessage_init_default {0, false, em_proto_Pose_init_default, false, em_proto_Pose_init_default, 0}
 #define em_proto_DownMessage_init_default        {false, em_proto_DownFrameDataMessage_init_default}
 #define em_proto_Quaternion_init_zero            {0, 0, 0, 0}
 #define em_proto_Vec3_init_zero                  {0, 0, 0}
@@ -192,7 +194,7 @@ extern "C" {
 #define em_proto_TouchControllerRight_init_zero  {false, em_proto_InputClickTouch_init_zero, false, em_proto_InputClickTouch_init_zero, false, em_proto_InputClickTouch_init_zero, false, em_proto_TouchControllerCommon_init_zero}
 #define em_proto_UpFrameMessage_init_zero        {0, 0, 0, 0}
 #define em_proto_UpMessage_init_zero             {0, false, em_proto_TrackingMessage_init_zero, false, em_proto_UpFrameMessage_init_zero}
-#define em_proto_DownFrameDataMessage_init_zero  {0, false, em_proto_Pose_init_zero, 0}
+#define em_proto_DownFrameDataMessage_init_zero  {0, false, em_proto_Pose_init_zero, false, em_proto_Pose_init_zero, 0}
 #define em_proto_DownMessage_init_zero           {false, em_proto_DownFrameDataMessage_init_zero}
 
 /* Field tags (for use in manual encoding/decoding) */
@@ -243,8 +245,9 @@ extern "C" {
 #define em_proto_UpMessage_tracking_tag          2
 #define em_proto_UpMessage_frame_tag             3
 #define em_proto_DownFrameDataMessage_frame_sequence_id_tag 1
-#define em_proto_DownFrameDataMessage_P_localSpace_viewSpace_tag 2
-#define em_proto_DownFrameDataMessage_display_time_tag 3
+#define em_proto_DownFrameDataMessage_P_localSpace_view0_tag 2
+#define em_proto_DownFrameDataMessage_P_localSpace_view1_tag 3
+#define em_proto_DownFrameDataMessage_display_time_tag 4
 #define em_proto_DownMessage_frame_data_tag      1
 
 /* Struct field encoding specification for nanopb */
@@ -371,11 +374,13 @@ X(a, STATIC,   OPTIONAL, MESSAGE,  frame,             3)
 
 #define em_proto_DownFrameDataMessage_FIELDLIST(X, a) \
 X(a, STATIC,   SINGULAR, INT64,    frame_sequence_id,   1) \
-X(a, STATIC,   OPTIONAL, MESSAGE,  P_localSpace_viewSpace,   2) \
-X(a, STATIC,   SINGULAR, INT64,    display_time,      3)
+X(a, STATIC,   OPTIONAL, MESSAGE,  P_localSpace_view0,   2) \
+X(a, STATIC,   OPTIONAL, MESSAGE,  P_localSpace_view1,   3) \
+X(a, STATIC,   SINGULAR, INT64,    display_time,      4)
 #define em_proto_DownFrameDataMessage_CALLBACK NULL
 #define em_proto_DownFrameDataMessage_DEFAULT NULL
-#define em_proto_DownFrameDataMessage_P_localSpace_viewSpace_MSGTYPE em_proto_Pose
+#define em_proto_DownFrameDataMessage_P_localSpace_view0_MSGTYPE em_proto_Pose
+#define em_proto_DownFrameDataMessage_P_localSpace_view1_MSGTYPE em_proto_Pose
 
 #define em_proto_DownMessage_FIELDLIST(X, a) \
 X(a, STATIC,   OPTIONAL, MESSAGE,  frame_data,        1)
@@ -417,8 +422,8 @@ extern const pb_msgdesc_t em_proto_DownMessage_msg;
 #define em_proto_DownMessage_fields &em_proto_DownMessage_msg
 
 /* Maximum encoded size of messages (where known) */
-#define em_proto_DownFrameDataMessage_size       63
-#define em_proto_DownMessage_size                65
+#define em_proto_DownFrameDataMessage_size       104
+#define em_proto_DownMessage_size                106
 #define em_proto_InputClickTouch_size            4
 #define em_proto_InputThumbstick_size            16
 #define em_proto_InputValueTouch_size            7
