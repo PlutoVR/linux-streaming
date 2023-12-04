@@ -22,8 +22,10 @@
 #include "util/u_misc.h"
 #include "util/u_debug.h"
 
-#include "pb_decode.h"
 #include "electricmaple.pb.h"
+
+#include <pb_decode.h>
+#include <pb_encode.h>
 
 // Monado includes
 #include "gstreamer/gst_internal.h"
@@ -607,7 +609,16 @@ ems_gstreamer_pipeline_set_down_msg(struct gstreamer_pipeline *gp, em_proto_Down
 {
 	struct ems_gstreamer_pipeline *egp = (struct ems_gstreamer_pipeline *)gp;
 
-	egp->downMsg_bytes = g_bytes_new(msg, sizeof(em_proto_DownMessage));
+	uint8_t buf[em_proto_DownMessage_size];
+	size_t n = 0;
+	pb_get_encoded_size(&n, em_proto_DownMessage_fields, &msg);
+
+	pb_ostream_t os = pb_ostream_from_buffer(buf, sizeof(buf));
+
+	pb_encode(&os, em_proto_DownMessage_fields, &msg);
+	g_bytes_unref(egp->downMsg_bytes);
+	egp->downMsg_bytes = NULL;
+	egp->downMsg_bytes = g_bytes_new(buf, n);
 }
 
 void
