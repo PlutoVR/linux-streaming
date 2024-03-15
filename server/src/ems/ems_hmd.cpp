@@ -203,24 +203,22 @@ ems_hmd_create(ems_instance &emsi)
 
 	// TODO: Find out the remote device's actual FOV. Or maybe remove this because I think get_view_poses lets us
 	// set the FOV dynamically.
-	const double hFOV = 90 * (M_PI / 180.0);
-	const double vFOV = 96.73 * (M_PI / 180.0);
-	// center of projection
-	const double hCOP = 0.529;
-	const double vCOP = 0.5;
-	if (
-	    /* right eye */
-	    !math_compute_fovs(1, hCOP, hFOV, 1, vCOP, vFOV, &eh->base.hmd->distortion.fov[1]) ||
-	    /*
-	     * left eye - same as right eye, except the horizontal center of projection is moved in the opposite
-	     * direction now
-	     */
-	    !math_compute_fovs(1, 1.0 - hCOP, hFOV, 1, vCOP, vFOV, &eh->base.hmd->distortion.fov[0])) {
-		// If those failed, it means our math was impossible.
-		EMS_ERROR(eh, "Failed to setup basic device info");
-		ems_hmd_destroy(&eh->base);
-		return NULL;
-	}
+
+	eh->base.hmd->distortion.fov[0] = (xrt_fov){
+	    // .angle_left = -0.75f,
+	    .angle_left = -0.855f,
+	    .angle_right = 0.785f,
+	    .angle_up = 0.838f,
+	    .angle_down = -0.873f,
+	};
+	eh->base.hmd->distortion.fov[1] = (xrt_fov){
+	    .angle_left = -0.785f,
+	    // .angle_right = 0.75f,
+	    .angle_right = 0.855f,
+	    .angle_up = 0.838f,
+	    .angle_down = -0.873f,
+	};
+
 	// TODO: Ditto, figure out the device's actual resolution
 	const int panel_w = 1080;
 	const int panel_h = 1200;

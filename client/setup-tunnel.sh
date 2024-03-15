@@ -8,6 +8,6 @@
 set -x
 set -e
 
-adb logcat -c
+# adb logcat -c
 adb reverse tcp:61943 tcp:61943
 adb reverse tcp:8080 tcp:8080

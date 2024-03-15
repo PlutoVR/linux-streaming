@@ -26,3 +26,4 @@ target_include_directories(
 		${JSONGLIB_INCLUDE_DIRS}
 		${GIO_INCLUDE_DIRS}
 	)
+target_compile_definitions(ems_gst PUBLIC G_LOG_DOMAIN="ElectricMapleServer")

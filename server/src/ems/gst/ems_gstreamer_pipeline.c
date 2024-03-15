@@ -171,7 +171,7 @@ on_offer_created(GstPromise *promise, GstElement *webrtcbin)
 static void
 webrtc_on_data_channel_cb(GstElement *webrtcbin, GObject *data_channel, struct ems_gstreamer_pipeline *egp)
 {
-	U_LOG_E("called!!!!");
+	U_LOG_I("called!!!!");
 }
 
 
@@ -187,7 +187,7 @@ webrtc_on_ice_candidate_cb(GstElement *webrtcbin, guint mlineindex, gchar *candi
 static void
 data_channel_error_cb(GstWebRTCDataChannel *datachannel, struct ems_gstreamer_pipeline *egp)
 {
-	U_LOG_E("error\n");
+	U_LOG_E("error");
 }
 
 gboolean
@@ -205,7 +205,7 @@ datachannel_send_message(GstWebRTCDataChannel *datachannel)
 static void
 data_channel_open_cb(GstWebRTCDataChannel *datachannel, struct ems_gstreamer_pipeline *egp)
 {
-	U_LOG_E("data channel opened\n");
+	U_LOG_I("data channel opened");
 
 	egp->timeout_src_id = g_timeout_add_seconds(3, G_SOURCE_FUNC(datachannel_send_message), datachannel);
 }
@@ -213,7 +213,7 @@ data_channel_open_cb(GstWebRTCDataChannel *datachannel, struct ems_gstreamer_pip
 static void
 data_channel_close_cb(GstWebRTCDataChannel *datachannel, struct ems_gstreamer_pipeline *egp)
 {
-	U_LOG_E("data channel closed\n");
+	U_LOG_I("data channel closed");
 
 	g_clear_handle_id(&egp->timeout_src_id, g_source_remove);
 	g_clear_object(&egp->data_channel);
@@ -240,7 +240,7 @@ data_channel_message_data_cb(GstWebRTCDataChannel *datachannel, GBytes *data, st
 static void
 data_channel_message_string_cb(GstWebRTCDataChannel *datachannel, gchar *str, struct ems_gstreamer_pipeline *egp)
 {
-	U_LOG_E("Received data channel message: %s\n", str);
+	U_LOG_I("Received data channel message: %s\n", str);
 }
 
 
@@ -277,7 +277,7 @@ webrtc_client_connected_cb(EmsSignalingServer *server, EmsClientId client_id, st
 		U_LOG_E("Couldn't make datachannel!");
 		assert(false);
 	} else {
-		U_LOG_E("Successfully created datachannel!");
+		U_LOG_I("Successfully created datachannel!");
 
 		g_signal_connect(egp->data_channel, "on-open", G_CALLBACK(data_channel_open_cb), egp);
 		g_signal_connect(egp->data_channel, "on-close", G_CALLBACK(data_channel_close_cb), egp);
@@ -536,7 +536,7 @@ loop_thread(void *data)
 void
 ems_gstreamer_pipeline_play(struct gstreamer_pipeline *gp)
 {
-	U_LOG_E("Starting pipeline");
+	U_LOG_I("Starting pipeline");
 	struct ems_gstreamer_pipeline *egp = (struct ems_gstreamer_pipeline *)gp;
 
 	main_loop = g_main_loop_new(NULL, FALSE);
@@ -556,7 +556,7 @@ void
 ems_gstreamer_pipeline_stop(struct gstreamer_pipeline *gp)
 {
 	struct ems_gstreamer_pipeline *egp = (struct ems_gstreamer_pipeline *)gp;
-	U_LOG_E("Stopping pipeline");
+	U_LOG_I("Stopping pipeline");
 
 	// Settle the pipeline.
 	U_LOG_T("Sending EOS");

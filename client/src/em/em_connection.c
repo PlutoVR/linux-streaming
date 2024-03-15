@@ -340,8 +340,9 @@ emconn_webrtc_deep_notify_callback(GstObject *self, GstObject *prop_object, GPar
 {
 	GstWebRTCPeerConnectionState state;
 	g_object_get(prop_object, "connection-state", &state, NULL);
-	ALOGI("RYLIE: deep-notify callback says peer connection state is %s", peer_connection_state_to_string(state));
-	emconn_update_status_from_peer_connection_state(emconn, state);
+	ALOGV("RYLIE: deep-notify callback says peer connection state is %s - but it lies sometimes",
+	      peer_connection_state_to_string(state));
+	// emconn_update_status_from_peer_connection_state(emconn, state);
 }
 
 static void
@@ -616,7 +617,9 @@ static void
 emconn_connect_internal(EmConnection *emconn, enum em_status status)
 {
 	em_connection_disconnect(emconn);
-
+	if (!emconn->ws_cancel) {
+		emconn->ws_cancel = g_cancellable_new();
+	}
 	g_cancellable_reset(emconn->ws_cancel);
 	ALOGI("RYLIE: calling soup_session_websocket_connect_async. websocket_uri = %s", emconn->websocket_uri);
 #if SOUP_MAJOR_VERSION == 2

@@ -335,12 +335,8 @@ em_remote_experience_poll_and_render_frame(EmRemoteExperience *exp)
 	if (0 != clock_gettime(CLOCK_MONOTONIC, &beginTime)) {
 		ALOGE("%s: clock_gettime failed, which is very unexpected", __FUNCTION__);
 		// TODO how to handle this?
+		return EM_POLL_RENDER_RESULT_SHOULD_NOT_RENDER;
 	}
-
-	// Locate views, set up layers
-	XrView views[2] = {};
-	views[0].type = XR_TYPE_VIEW;
-	views[1].type = XR_TYPE_VIEW;
 
 
 	XrViewLocateInfo locateInfo = {.type = XR_TYPE_VIEW_LOCATE_INFO,
@@ -350,12 +346,18 @@ em_remote_experience_poll_and_render_frame(EmRemoteExperience *exp)
 
 	XrViewState viewState = {.type = XR_TYPE_VIEW_STATE};
 
-	uint32_t viewCount = 2;
-	result = xrLocateViews(session, &locateInfo, &viewState, 2, &viewCount, views);
+	// Locate views, set up layers
+	XrView views[2] = {};
+	views[0].type = XR_TYPE_VIEW;
+	views[1].type = XR_TYPE_VIEW;
+
+	uint32_t viewCount = 0;
+	result = xrLocateViews(session, &locateInfo, &viewState, sizeof(views) / sizeof(views[0]), &viewCount, views);
 
 	if (XR_FAILED(result)) {
 		ALOGE("Failed to locate views");
 		// TODO how to handle this?
+		return EM_POLL_RENDER_RESULT_SHOULD_NOT_RENDER;
 	}
 
 	XrCompositionLayerProjection layer = {};
@@ -443,6 +445,19 @@ em_remote_experience_inner_poll_and_render_frame(EmRemoteExperience *exp,
 	// TODO these may not be the extents of the frame we receive, thus introducing repeated scaling!
 	uint32_t width = exp->eye_extents.width;
 	uint32_t height = exp->eye_extents.height;
+
+	static bool showedFov = false;
+	if (!showedFov) {
+		showedFov = true;
+		ALOGI(
+		    "RYLIE XrFovf 0: (xrt_fov){ .angle_left = %0.03ff, .angle_right = %0.03ff, .angle_up = %0.03ff, "
+		    ".angle_down = %0.03ff }",
+		    views[0].fov.angleLeft, views[0].fov.angleRight, views[0].fov.angleUp, views[0].fov.angleDown);
+		ALOGI(
+		    "RYLIE XrFovf 1: (xrt_fov){ .angle_left = %0.03ff, .angle_right = %0.03ff, .angle_up = %0.03ff, "
+		    ".angle_down = %0.03ff }",
+		    views[1].fov.angleLeft, views[1].fov.angleRight, views[1].fov.angleUp, views[1].fov.angleDown);
+	}
 
 	projectionLayer->space = exp->xr_owned.worldSpace;
 

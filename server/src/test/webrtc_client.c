@@ -49,7 +49,7 @@ data_channel_error_cb(GstWebRTCDataChannel *datachannel, void *data)
 static void
 data_channel_close_cb(GstWebRTCDataChannel *datachannel, gpointer timeout_src_id)
 {
-	U_LOG_E("Data channel closed");
+	U_LOG_I("Data channel closed");
 
 	g_source_remove(GPOINTER_TO_UINT(timeout_src_id));
 	g_clear_object(&datachannel);
@@ -58,13 +58,13 @@ data_channel_close_cb(GstWebRTCDataChannel *datachannel, gpointer timeout_src_id
 static void
 data_channel_message_data_cb(GstWebRTCDataChannel *datachannel, GBytes *data, void *user_data)
 {
-	U_LOG_E("Received data channel message data: %u", (uint32_t)g_bytes_get_size(data));
+	U_LOG_I("Received data channel message data: %u", (uint32_t)g_bytes_get_size(data));
 }
 
 static void
 data_channel_message_string_cb(GstWebRTCDataChannel *datachannel, gchar *str, void *user_data)
 {
-	U_LOG_E("Received data channel message string: %s", str);
+	U_LOG_I("Received data channel message string: %s", str);
 }
 
 static gboolean
@@ -80,7 +80,7 @@ webrtc_on_data_channel_cb(GstElement *webrtcbin, GstWebRTCDataChannel *data_chan
 {
 	guint timeout_src_id;
 
-	U_LOG_E("Successfully created datachannel");
+	U_LOG_I("Successfully created datachannel");
 
 	g_assert_null(datachannel);
 
