@@ -14,6 +14,7 @@ target_link_libraries(
 		aux_gstreamer
 		${GST_LIBRARIES}
 		${GST_SDP_LIBRARIES}
+		${GST_RTP_LIBRARIES}
 		${GST_WEBRTC_LIBRARIES}
 		${GLIB_LIBRARIES}
 		${LIBSOUP_LIBRARIES}

@@ -101,8 +101,9 @@ message UpMessage {
 
 message DownFrameDataMessage {
 	int64 frame_sequence_id = 1;
-	Pose P_localSpace_viewSpace = 2;
-	int64 display_time = 3;
+	Pose P_localSpace_view0 = 2; // Left view
+	Pose P_localSpace_view1 = 3; // Right view
+	int64 display_time = 4;
 	// TODO fovs here
 }
 

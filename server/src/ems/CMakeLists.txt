@@ -27,6 +27,7 @@ target_link_libraries(
 		comp_util
 		comp_multi
 		ems_gst
+		em_proto
 	)
 target_include_directories(comp_ems PUBLIC . ${GST_INCLUDE_DIRS})
 

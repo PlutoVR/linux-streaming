@@ -36,4 +36,7 @@ struct em_sample
 {
 	GLuint frame_texture_id;
 	GLenum frame_texture_target;
+
+	bool have_poses;
+	XrPosef poses[2];
 };

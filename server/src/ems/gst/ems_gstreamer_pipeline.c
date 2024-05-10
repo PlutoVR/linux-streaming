@@ -22,8 +22,10 @@
 #include "util/u_misc.h"
 #include "util/u_debug.h"
 
-#include "pb_decode.h"
 #include "electricmaple.pb.h"
+
+#include <pb_decode.h>
+#include <pb_encode.h>
 
 // Monado includes
 #include "gstreamer/gst_internal.h"
@@ -34,6 +36,7 @@
 #include <glib-unix.h>
 #include <gst/gst.h>
 #include <gst/gststructure.h>
+#include <gst/rtp/gstrtpbuffer.h>
 
 #define GST_USE_UNSTABLE_API
 #include <gst/webrtc/datachannel.h>
@@ -51,6 +54,10 @@
 #define DEFAULT_VIDEOSINK " videoconvert ! autovideosink "
 #endif
 
+// TODO: Can we define the below at a higher level so it can also be
+//       picked-up by em_stream_client ?
+#define RTP_TWOBYTES_HDR_EXT_ID 1 // Must be in the [1,15] range
+#define RTP_TWOBYTES_HDR_EXT_MAX_SIZE 255
 
 
 EmsSignalingServer *signaling_server;
@@ -67,10 +74,10 @@ struct ems_gstreamer_pipeline
 	GObject *data_channel;
 	guint timeout_src_id;
 
+	GBytes *downMsg_bytes;
 
 	struct ems_callbacks *callbacks;
 };
-
 
 static gboolean
 sigint_handler(gpointer user_data)
@@ -243,6 +250,57 @@ data_channel_message_string_cb(GstWebRTCDataChannel *datachannel, gchar *str, st
 	U_LOG_I("Received data channel message: %s\n", str);
 }
 
+GstPadProbeReturn
+webrtcbin_srcpad_probe(GstPad *pad, GstPadProbeInfo *info, gpointer user_data)
+{
+	(void)pad;
+
+	GstBuffer *buffer;
+	GstRTPBuffer rtp_buffer = GST_RTP_BUFFER_INIT;
+	gconstpointer extension_data;
+	size_t extension_size;
+
+	struct ems_gstreamer_pipeline *egp = (struct ems_gstreamer_pipeline *)user_data;
+
+	if (GST_PAD_PROBE_INFO_TYPE(info) & GST_PAD_PROBE_TYPE_BUFFER_LIST) {
+		U_LOG_E("Received BufferList in webrtcbin srcpad! No support for BufferList!\n");
+		return GST_PAD_PROBE_REMOVE;
+	}
+
+	buffer = gst_pad_probe_info_get_buffer(info);
+
+	buffer = gst_buffer_make_writable(buffer);
+
+	if (!gst_rtp_buffer_map(buffer, GST_MAP_WRITE, &rtp_buffer)) {
+		U_LOG_E("Failed to map GstBuffer\n");
+		return GST_PAD_PROBE_REMOVE;
+	}
+
+	// Add extension data only on last Access Unit, indicated by the marker bit.
+	if (!gst_rtp_buffer_get_marker(&rtp_buffer)) {
+		gst_rtp_buffer_unmap(&rtp_buffer);
+		return GST_PAD_PROBE_OK; // Nothing's wrong, we keep the pad active.
+	}
+
+	// Inject extension data
+	extension_data = g_bytes_get_data(egp->downMsg_bytes, &extension_size);
+
+	if (extension_size > RTP_TWOBYTES_HDR_EXT_MAX_SIZE) {
+		U_LOG_E("size of data in rtp header is too large ! Implement multi-extension-element support !");
+		gst_rtp_buffer_unmap(&rtp_buffer);
+		return GST_PAD_PROBE_REMOVE;
+	}
+
+	if (!gst_rtp_buffer_add_extension_twobytes_header(&rtp_buffer, 0 /* appbits */, RTP_TWOBYTES_HDR_EXT_ID,
+	                                                  extension_data, (guint)extension_size)) {
+		U_LOG_E("Failed to add extension data !");
+		return GST_PAD_PROBE_REMOVE;
+	}
+
+	gst_rtp_buffer_unmap(&rtp_buffer);
+
+	return GST_PAD_PROBE_OK;
+}
 
 static void
 webrtc_client_connected_cb(EmsSignalingServer *server, EmsClientId client_id, struct ems_gstreamer_pipeline *egp)
@@ -250,6 +308,7 @@ webrtc_client_connected_cb(EmsSignalingServer *server, EmsClientId client_id, st
 	GstBin *pipeline = GST_BIN(egp->base.pipeline);
 	gchar *name;
 	GstElement *webrtcbin;
+	GstPad *webrtcbin_srcpad;
 	GstCaps *caps;
 	GstStateChangeReturn ret;
 	GstWebRTCRTPTransceiver *transceiver;
@@ -285,6 +344,19 @@ webrtc_client_connected_cb(EmsSignalingServer *server, EmsClientId client_id, st
 		g_signal_connect(egp->data_channel, "on-message-data", G_CALLBACK(data_channel_message_data_cb), egp);
 		g_signal_connect(egp->data_channel, "on-message-string", G_CALLBACK(data_channel_message_string_cb),
 		                 egp);
+	}
+
+	// Get the srcpad associated with our webrtcbin element
+	webrtcbin_srcpad = gst_element_get_static_pad(webrtcbin, "src");
+
+	if (webrtcbin_srcpad != NULL) {
+		// Add a probe to call our callback when buffers get to the src pad
+		gst_pad_add_probe(webrtcbin_srcpad, GST_PAD_PROBE_TYPE_BUFFER | GST_PAD_PROBE_TYPE_BUFFER_LIST,
+		                  webrtcbin_srcpad_probe, egp, NULL /*destroy_data*/);
+
+		gst_object_unref(webrtcbin_srcpad);
+	} else {
+		U_LOG_E("Could not retrieve webrtcbin srcpad !");
 	}
 
 	ret = gst_element_set_state(webrtcbin, GST_STATE_PLAYING);
@@ -532,6 +604,22 @@ loop_thread(void *data)
  * Exported functions.
  *
  */
+void
+ems_gstreamer_pipeline_set_down_msg(struct gstreamer_pipeline *gp, em_proto_DownMessage *msg)
+{
+	struct ems_gstreamer_pipeline *egp = (struct ems_gstreamer_pipeline *)gp;
+
+	uint8_t buf[em_proto_DownMessage_size];
+	size_t n = 0;
+	pb_get_encoded_size(&n, em_proto_DownMessage_fields, &msg);
+
+	pb_ostream_t os = pb_ostream_from_buffer(buf, sizeof(buf));
+
+	pb_encode(&os, em_proto_DownMessage_fields, &msg);
+	g_bytes_unref(egp->downMsg_bytes);
+	egp->downMsg_bytes = NULL;
+	egp->downMsg_bytes = g_bytes_new(buf, n);
+}
 
 void
 ems_gstreamer_pipeline_play(struct gstreamer_pipeline *gp)

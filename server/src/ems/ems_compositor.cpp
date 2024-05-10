@@ -17,6 +17,9 @@
 
 #include "ems_compositor.h"
 
+
+#include "electricmaple.pb.h"
+
 #include "gstreamer/gst_internal.h"
 #include "os/os_time.h"
 
@@ -34,6 +37,7 @@
 #include "vk/vk_image_readback_to_xf_pool.h"
 #include "vk/vk_cmd.h"
 #include "vk/vk_cmd_pool.h"
+
 
 #include <stdio.h>
 #include <stdarg.h>
@@ -333,6 +337,16 @@ compositor_init_sys_info(struct ems_compositor *c, struct xrt_device *xdev)
 	return true;
 }
 
+static inline em_proto_Pose
+to_proto(const struct xrt_pose &pose)
+{
+	em_proto_Pose ret = em_proto_Pose_init_default;
+	ret.has_position = true;
+	ret.position = {pose.position.x, pose.position.y, pose.position.z};
+	ret.has_orientation = true;
+	ret.orientation = {pose.orientation.w, pose.orientation.x, pose.orientation.y, pose.orientation.z};
+	return ret;
+}
 
 /*
  *
@@ -508,7 +522,20 @@ pack_blit_and_encode(struct ems_compositor *c,
 	wrap->base_frame.source_timestamp = wrap->base_frame.timestamp;
 	wrap->base_frame.source_sequence = c->image_sequence++;
 	wrap->base_frame.source_id = 0;
-	wrap = NULL;
+
+	// set the latest Downstream mesg before pushing the frame
+	em_proto_DownMessage msg = em_proto_DownMessage_init_default;
+	msg.has_frame_data = true;
+	msg.frame_data.frame_sequence_id = wrap->base_frame.source_sequence;
+	msg.frame_data.has_P_localSpace_view0 = true;
+	msg.frame_data.P_localSpace_view0 = to_proto(lvd->pose);
+	msg.frame_data.has_P_localSpace_view1 = true;
+	msg.frame_data.P_localSpace_view1 = to_proto(rvd->pose);
+	// msg.frame_datadisplay_time; /* Needed ?*/
+
+	wrap = NULL; // important to keep this line after setting "msg.frame_sequence_id" above.
+
+	ems_gstreamer_pipeline_set_down_msg(c->gstreamer_pipeline, &msg);
 
 	if (!c->pipeline_playing) {
 		ems_gstreamer_pipeline_play(c->gstreamer_pipeline);

@@ -44,6 +44,7 @@ find_package(PkgConfig REQUIRED)
 # GLib packages we'll need
 pkg_check_modules(GLIB REQUIRED glib-2.0)
 pkg_check_modules(GST_SDP REQUIRED gstreamer-sdp-1.0)
+pkg_check_modules(GST_RTP REQUIRED gstreamer-rtp-1.0)
 pkg_check_modules(GST_WEBRTC REQUIRED gstreamer-webrtc-1.0)
 pkg_check_modules(GST REQUIRED gstreamer-plugins-base-1.0)
 pkg_check_modules(GST REQUIRED gstreamer-plugins-bad-1.0)
